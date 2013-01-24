@@ -242,7 +242,7 @@ class RingNode:
             self.ssh_agent = Agent()
 
 
-    def __del__(self):
+    def close(self):
         self.ssh_client.close()
 
     
@@ -349,7 +349,7 @@ class NodeCommandThread(threading.Thread):
     ''' a thread for processing commands to a node via SSH
     '''
 
-    def __init__(self, queue, command, agent, timeout=DFLT_SSH_TIMEOUT, loglevel=LOG_NONE):
+    def __init__(self, queue, command, agent, timeout=DFLT_SSH_TIMEOUT, loglevel=LOG_DEBUG):
         self.queue = queue
         self.command = command
         self.agent = agent
@@ -386,6 +386,7 @@ class NodeCommandThread(threading.Thread):
                     # some template replacements
                     cmd = self.command.replace("%%HOST%%", host)
                     result = node.run_command(cmd)
+                    node.close()
                 except RingException, e:
                     result.set_ssh_errormsg(e.__str__())
 
