@@ -10,6 +10,8 @@ Without access to its nodes, this code isn't that useful.
 Examples
 ========
 
+More detailed examples can be found in the [examples](https://github.com/NLNOG/py-ring/tree/master/examples) directory.
+
 RING information
 ----------------
 
@@ -33,3 +35,4 @@ The module offers an abstraction layer which makes it easy to interact with node
     >>> from ringtools.node import RingNode
     >>> print RingNode('bit01').run_command('uptime').get_stdout()
     ['22:26:35 up 12 days, 15:30,  0 users,  load average: 0.49, 0.25, 0.12']
+
