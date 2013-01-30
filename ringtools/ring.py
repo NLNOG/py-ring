@@ -18,7 +18,7 @@
 #
 # ===========================================================================
 
-import Queue
+import Queue, random
 from dns.resolver import query
 from dns.exception import DNSException
 from paramiko import Agent
