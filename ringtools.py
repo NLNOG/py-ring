@@ -25,7 +25,7 @@ from paramiko import *
 # ===========================================================================
 
 DFLT_SSH_TIMEOUT = 20           # seconds
-DFLT_FQDN = "ring.nlnog.net"    # fqdn for hosts
+DFLT_FQDN = "ring.nlnog.net"    # fqdn for nodes
 DFLT_MAX_THREADS = 25           # number of concurrent threads
 
 LOG_NONE  = 0
@@ -284,7 +284,7 @@ class RingNode:
             raise RingException(e)
         except socket.error, e:
             self.state = RingNode.STATE_DISCONNECTED
-            raise RingException(e)
+            raise RingException(e[1])
         except socket.timeout, e:
             self.state = RingNode.STATE_DISCONNECTED
             raise RingException('Socket timeout.')
@@ -349,7 +349,7 @@ class NodeCommandThread(threading.Thread):
     ''' a thread for processing commands to a node via SSH
     '''
 
-    def __init__(self, queue, command, agent, timeout=DFLT_SSH_TIMEOUT, loglevel=LOG_DEBUG):
+    def __init__(self, queue, command, agent, timeout=DFLT_SSH_TIMEOUT, loglevel=LOG_NONE):
         self.queue = queue
         self.command = command
         self.agent = agent
@@ -386,9 +386,10 @@ class NodeCommandThread(threading.Thread):
                     # some template replacements
                     cmd = self.command.replace("%%HOST%%", host)
                     result = node.run_command(cmd)
-                    node.close()
                 except RingException, e:
                     result.set_ssh_errormsg(e.__str__())
+                finally:
+                    node.close()
 
                 result.add_value('runtime', time.time() - starttime)
                 self.result.append(result)
@@ -437,13 +438,14 @@ def run_command(command, hosts, max_threads=DFLT_MAX_THREADS):
     return result
 
 
-def get_hostlist():
+def get_ring_nodes(country=None):
     '''Get a list of all ring hosts using a TCP DNS query.
+       Optionally, specify the country for which the lookup has to be done.
     '''
     hosts = []
     try:
         # TCP query required due to the large TXT record
-        qres = query("ring.nlnog.net", "TXT", tcp=True)
+        qres = query("%sring.nlnog.net" % ("%s." % country if country != None else ''), "TXT", tcp=True)
         for rr in qres:
             for s in rr.strings:
                 for srv in s.split(' '):
@@ -451,35 +453,107 @@ def get_hostlist():
     except DNSException, e:
         return []
 
+    hosts.sort()
     return hosts
 
 
-def pick_hosts(count, include=[], exclude=[]):
+def get_ring_countries():
+    '''Get a list of all ring countries.
+    '''
+
+    countries = []
+    try:
+        # TCP query required due to the large TXT record
+        qres = query("countries.ring.nlnog.net", "TXT", tcp=True)
+        for rr in qres:
+            for s in rr.strings:
+                for srv in s.split(' '):
+                    countries.append(srv)
+    except DNSException, e:
+        return []
+
+    countries.sort()
+    return countries
+
+
+def get_ring_networks():
+    '''Get a list of all ring networks.
+    '''
+
+    networks = {}
+    hosts = get_ring_nodes()
+    for h in hosts:
+        networks[h[:-2]] = 1
+    return networks.keys()
+    
+
+def pick_nodes(count, include=[], exclude=[]):
     '''Pick a set of ring hosts. 
     '''
-    hosts = get_hostlist()
+    nodes = get_ring_nodes()
 
     if isinstance(include, str):
         include = [include]
     if isinstance(exclude, str):
         exclude = [exclude]
     
-    if count >= len(hosts):
-        return hosts
+    if count >= len(nodes):
+        return nodes
     if len(include) >= count:
         return include
     else:
         newlist = include
         for x in range(count - len(include)):
-            i = random.randint(0, len(hosts) - 1)
-            newlist.append(hosts[i])
-            hosts.remove(hosts[i])
+            i = random.randint(0, len(nodes) - 1)
+            newlist.append(nodes[i])
+            nodes.remove(nodes[i])
         for x in exclude:
-            Gnewlist.remove(x)
+            newlist.remove(x)
         return newlist
 
 
-def is_ringnode(host):
+def is_ring_node(host):
     '''determine if a name is a name of an existing ringnode
     '''
-    return host in get_hostlist()
+    return host in get_ring_nodes()
+
+
+def is_ring_country(country):
+    '''determine if a country has any ringnodes.
+    '''
+
+    return country in get_ring_countries()
+
+
+def get_countries_by_node():
+    '''Get a map of node->country entries
+    '''
+    result = {}
+    countries = get_ring_countries()
+    for country in countries:
+        nodes = get_ring_nodes(country) 
+        for node in nodes:
+            result[node] = country
+
+    return result
+
+
+def get_nodes_by_country():
+    '''Get a list of all nodes per country
+    '''
+    result = {}
+    countries = get_ring_countries()
+    for country in countries:
+        result[country] = []
+        nodes = get_ring_nodes(country) 
+        for node in nodes:
+            result[country].append(node)
+
+    return result
+
+
+def get_node_country(node):
+    '''Look up in which country a node is
+    '''
+
+    return get_countries_by_node()[node]

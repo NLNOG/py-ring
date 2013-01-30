@@ -28,7 +28,10 @@ for res in result.get_successful_results().get_results():
     if soup.title:
         res.add_value('title', soup.title.string)
 
-print result.get_successful_results().get_value_sorted('HTTP-code')
+s = result.get_successful_results().get_value_sorted('Date')
+for k in s:
+    print "%s: %s" % k
+
 
 print "command failed:"
 for res in result.get_failed_results(False).get_results():
