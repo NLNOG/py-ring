@@ -113,29 +113,104 @@ def get_ring_networks():
     return networks.keys()
     
 
-def pick_nodes(count, include=[], exclude=[]):
-    '''Pick a set of ring hosts. 
+def _get_node_add_pref(node, i_h, e_h, i_c, e_c, i_n, e_n, v4, v6, cbn, v4nodes):
+    # determine the preference of a node to be added
+    # higher = better
+
+
+    # mentioned in host include
+    if node in i_h:
+        return 4
+
+    # mentioned in host_exclude
+    if node in e_h:
+        return 0
+
+    # v4 required, no v4 support
+    if v4 and not v4nodes[node]:
+        return 0
+
+    # v6 only required and v4 supported
+    if v6 and v4nodes[node]:
+        return 0
+
+    # mentioned in network exclude
+    if node[:-2] in e_n:
+        return 0
+
+    # mentioned in country exclude
+    if cbn.get(node, 'unknown') in e_c:
+        return 0
+    
+    # mentioned in network include
+    if node[:-2] in i_n:
+        return 3
+
+    # mentioned in country include
+    if cbn.get(node, 'unknown') in i_c:
+        return 2
+
+    # finally
+    return 1
+
+
+def pick_nodes(count, 
+               inc_hosts=[], ex_hosts=[], 
+               inc_countries=[], ex_countries=[], 
+               inc_networks=[], ex_networks=[],
+               support_ipv4=False, support_ipv6_only=False,
+               unique_countries=False, unique_networks=False):
+    '''Pick a set of ring hosts, specific filters can be given optionally
     '''
     nodes = get_ring_nodes()
+    nbc = get_nodes_by_country()
+    cbn = get_countries_by_node()
+    nbn = get_nodes_by_network()
+    networks = get_ring_networks()
+    v4 = {}
+    for node in nodes:
+        v4[node] = node_has_ipv4(node)
 
-    if isinstance(include, str):
-        include = [include]
-    if isinstance(exclude, str):
-        exclude = [exclude]
-    
-    if count >= len(nodes):
-        return nodes
-    if len(include) >= count:
-        return include
-    else:
-        newlist = include
-        for x in range(count - len(include)):
-            i = random.randint(0, len(nodes) - 1)
-            newlist.append(nodes[i])
-            nodes.remove(nodes[i])
-        for x in exclude:
-            newlist.remove(x)
-        return newlist
+    if isinstance(inc_hosts, str):
+        inc_hosts = [inc_hosts]
+    if isinstance(ex_hosts, str):
+        ex_hosts = [ex_hosts]
+    if isinstance(inc_countries, str):
+        inc_countries = [inc_countries]
+    if isinstance(ex_countries, str):
+        ex_countries = [ex_countries]
+    if isinstance(inc_networks, str):
+        inc_networks = [inc_networks]
+    if isinstance(ex_networks, str):
+        ex_networks = [ex_networks]
+   
+    newlist = []
+
+    prefs = {}
+    for node in nodes:
+        # TODO: dit enigszins herschrijven zodat er in preflevels blokjes van hosts toegevoegd worden op basis van country/net
+        # dus bijv als inc_countr='fr' dan moet ['fr1','fr2','fr3'] als array van 'kies er hier een uit' toegevoegd worden aan de set met mogelijk geschikte nodes
+        # je zou dan dus iets krijgen als [ node1, node2, [node1 | node 2], [node 3|node 4] node 5]
+        # waarbij iedere sub-array geregeld wordt door een inc_*
+        pref = _get_node_add_pref(node, inc_hosts, ex_hosts, inc_countries, ex_countries, inc_networks, ex_networks, support_ipv4, support_ipv6_only, cbn, v4)
+        if not prefs.has_key(pref):
+            prefs[pref] = []
+        prefs[pref].append(node)
+
+    # only examine prefs 4 downto 1, pref 0 is used for nodes which need to be excluded
+    for pref in range(4, 0, -1):
+        # TODO: properly handle subsets
+        todo = count - len(newlist)
+        if len(prefs[pref])> 0:
+            # add all nodes in this pref lvl
+            if len(prefs[pref]) <= todo:
+                newlist.append(prefs[pref])
+            else:
+                # TODO: pick #todo items from prefs[pref]
+                pass
+
+            
+    return newlist
 
 
 def is_ring_node(host):
@@ -175,6 +250,19 @@ def get_nodes_by_country():
         for node in nodes:
             result[country].append(node)
 
+    return result
+
+
+def get_nodes_by_network():
+    '''Get a list of all nodes for a network
+    '''
+    result = {}
+    nodes = get_ring_nodes()
+    for node in nodes:
+        if not node[:-2] in result.keys():
+            result[node[:-2]] = []
+        result[node[:-2]].append(node)
+    
     return result
 
 

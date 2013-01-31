@@ -36,3 +36,4 @@ print "all French nodes: %s" % ", ".join(ring.get_ring_nodes('fr'))
 
 # get the country for node nautile01
 print "country for nautile01: %s"  % ring.get_node_country('nautile01')
+
