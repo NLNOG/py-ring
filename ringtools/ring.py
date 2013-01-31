@@ -183,3 +183,17 @@ def get_node_country(node):
     '''
 
     return get_countries_by_node()[node]
+
+
+def node_has_ipv4(node):
+    '''determine if a node support ipv4
+    '''
+
+    if not node in get_ring_nodes():
+        return False
+    else:
+        try:
+            result = query("%s.ring.nlnog.net" % node, "A")
+            return True
+        except DNSException:
+            return False

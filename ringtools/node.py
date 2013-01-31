@@ -67,7 +67,8 @@ class RingNode:
 
 
     def close(self):
-        self.ssh_client.close()
+        if self.ssh_client != None:
+            self.ssh_client.close()
 
     
     def connect(self, hostname=None, timeout=DFLT_SSH_TIMEOUT):
