@@ -34,6 +34,12 @@ DFLT_MAX_THREADS = 25           # number of concurrent threads
 
 # ===========================================================================
 
+# caches for DNS queries
+_nodes = []
+_countries = []
+_has_v4 = {}
+
+
 def run_command(command, hosts, max_threads=DFLT_MAX_THREADS):
     ''' Run a command over a set of hosts using threading.
         A working SSH agent is for authentication.
@@ -68,6 +74,11 @@ def get_ring_nodes(country=None):
     '''Get a list of all ring hosts using a TCP DNS query.
        Optionally, specify the country for which the lookup has to be done.
     '''
+    global _nodes
+
+    if _nodes and not country:
+        return _nodes[:]
+
     hosts = []
     try:
         # TCP query required due to the large TXT record
@@ -80,12 +91,18 @@ def get_ring_nodes(country=None):
         return []
 
     hosts.sort()
+    if not country:
+        _nodes = hosts[:]
     return hosts
 
 
 def get_ring_countries():
     '''Get a list of all ring countries.
     '''
+
+    global _countries
+    if _countries:
+        return _countries[:]
 
     countries = []
     try:
@@ -99,6 +116,7 @@ def get_ring_countries():
         return []
 
     countries.sort()
+    _countries = countries[:]
     return countries
 
 
@@ -275,12 +293,17 @@ def get_node_country(node):
 def node_has_ipv4(node):
     '''determine if a node support ipv4
     '''
+    global _has_v4
 
     if not node in get_ring_nodes():
         return False
+    elif node in _has_v4:
+        return _has_v4[node]
     else:
         try:
             result = query("%s.ring.nlnog.net" % node, "A")
+            _has_v4[node] = True
             return True
         except DNSException:
+            _has_v4[node] = False
             return False
