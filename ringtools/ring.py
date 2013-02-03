@@ -18,7 +18,7 @@
 #
 # ===========================================================================
 
-import Queue, random
+import Queue, random, time
 from dns.resolver import query
 from dns.exception import DNSException
 from paramiko import Agent
@@ -113,103 +113,100 @@ def get_ring_networks():
     return networks.keys()
     
 
-def _get_node_add_pref(node, i_h, e_h, i_c, e_c, i_n, e_n, v4, v6, cbn, v4nodes):
-    # determine the preference of a node to be added
-    # higher = better
-
-
-    # mentioned in host include
-    if node in i_h:
-        return 4
-
-    # mentioned in host_exclude
-    if node in e_h:
-        return 0
-
-    # v4 required, no v4 support
-    if v4 and not v4nodes[node]:
-        return 0
-
-    # v6 only required and v4 supported
-    if v6 and v4nodes[node]:
-        return 0
-
-    # mentioned in network exclude
-    if node[:-2] in e_n:
-        return 0
-
-    # mentioned in country exclude
-    if cbn.get(node, 'unknown') in e_c:
-        return 0
-    
-    # mentioned in network include
-    if node[:-2] in i_n:
-        return 3
-
-    # mentioned in country include
-    if cbn.get(node, 'unknown') in i_c:
-        return 2
-
-    # finally
-    return 1
-
-
 def pick_nodes(count, 
                inc_hosts=[], ex_hosts=[], 
-               inc_countries=[], ex_countries=[], 
-               inc_networks=[], ex_networks=[],
-               support_ipv4=False, support_ipv6_only=False,
-               unique_countries=False, unique_networks=False):
+               inc_countries=[], ex_countries=[], only_countries=[],  
+               inc_networks=[], ex_networks=[], only_networks=[],
+               support_ipv4=None, support_ipv6_only=None):
     '''Pick a set of ring hosts, specific filters can be given optionally
     '''
+    random.seed(time.time())
     nodes = get_ring_nodes()
     nbc = get_nodes_by_country()
     cbn = get_countries_by_node()
     nbn = get_nodes_by_network()
     networks = get_ring_networks()
-    v4 = {}
+    v4 = {} 
+
+    if support_ipv4 != None and support_ipv4 == False:
+        support_ipv6_only = True
+
     for node in nodes:
         v4[node] = node_has_ipv4(node)
-
+        
     if isinstance(inc_hosts, str):
         inc_hosts = [inc_hosts]
     if isinstance(ex_hosts, str):
         ex_hosts = [ex_hosts]
-    if isinstance(inc_countries, str):
-        inc_countries = [inc_countries]
-    if isinstance(ex_countries, str):
-        ex_countries = [ex_countries]
     if isinstance(inc_networks, str):
         inc_networks = [inc_networks]
     if isinstance(ex_networks, str):
         ex_networks = [ex_networks]
+    if isinstance(only_networks, str):
+        only_networks = [only_networks]
+    if isinstance(inc_countries, str):
+        inc_countries = [inc_countries]
+    if isinstance(ex_countries, str):
+        ex_countries = [ex_countries]
+    if isinstance(only_countries, str):
+        only_countries = [only_countries]
    
     newlist = []
 
-    prefs = {}
-    for node in nodes:
-        # TODO: dit enigszins herschrijven zodat er in preflevels blokjes van hosts toegevoegd worden op basis van country/net
-        # dus bijv als inc_countr='fr' dan moet ['fr1','fr2','fr3'] als array van 'kies er hier een uit' toegevoegd worden aan de set met mogelijk geschikte nodes
-        # je zou dan dus iets krijgen als [ node1, node2, [node1 | node 2], [node 3|node 4] node 5]
-        # waarbij iedere sub-array geregeld wordt door een inc_*
-        pref = _get_node_add_pref(node, inc_hosts, ex_hosts, inc_countries, ex_countries, inc_networks, ex_networks, support_ipv4, support_ipv6_only, cbn, v4)
-        if not prefs.has_key(pref):
-            prefs[pref] = []
-        prefs[pref].append(node)
+    # start with all explicitly included hosts
+    if inc_hosts:
+        newlist = inc_hosts
+        [nodes.remove(h) for h in newlist]
 
-    # only examine prefs 4 downto 1, pref 0 is used for nodes which need to be excluded
-    for pref in range(4, 0, -1):
-        # TODO: properly handle subsets
-        todo = count - len(newlist)
-        if len(prefs[pref])> 0:
-            # add all nodes in this pref lvl
-            if len(prefs[pref]) <= todo:
-                newlist.append(prefs[pref])
-            else:
-                # TODO: pick #todo items from prefs[pref]
-                pass
+    # for each network to be included pick a node
+    for n in inc_networks:
+        valid = []
+        for h in nbn.get(n, ''):
+            if ((not h in newlist) and (not h in ex_hosts) and
+               ((support_ipv4 != None and ((support_ipv4 and v4.get(h, False)) or not support_ipv4)) or support_ipv4 == None) and
+               ((support_ipv6_only != None and ((support_ipv6_only and not v4.get(h, True)) or not support_ipv6_only)) or support_ipv6_only == None) and
+               (cbn.get(h, '') not in ex_countries) and 
+               (cbn.get(h, '') in only_countries or len(only_countries) == 0)):
+                    valid.append(h)
+        if len(valid) > 0:
+            r = random.randint(0, len(valid) - 1)
+            newlist.append(valid[r])
+            nodes.remove(valid[r])
 
-            
+    # for each country to be included pick a host
+    for c in inc_countries:
+        valid = []
+        for h in nbc.get(c, ''):
+            if ((not h in newlist) and (not h in ex_hosts) and
+               ((support_ipv4 != None and ((support_ipv4 and v4.get(h, False)) or not support_ipv4)) or support_ipv4 == None) and
+               ((support_ipv6_only != None and ((support_ipv6_only and not v4.get(h, True)) or not support_ipv6_only)) or support_ipv6_only == None) and
+               (nbn.get(h, '') not in ex_networks) and
+               (h[:-2] in only_networks or len(only_networks) == 0)):
+                    valid.append(h)
+        if len(valid) > 0:
+            r = random.randint(0, len(valid) - 1)
+            newlist.append(valid[r])
+            nodes.remove(valid[r])
+
+    # select all possibly valid hosts 
+    valid = []
+    for h in nodes:
+        if ((not h in newlist) and (not h in ex_hosts) and
+           ((support_ipv4 != None and ((support_ipv4 and v4.get(h, False)) or not support_ipv4)) or support_ipv4 == None) and
+           ((support_ipv6_only != None and ((support_ipv6_only and not v4.get(h, True)) or not support_ipv6_only)) or support_ipv6_only == None) and
+           (nbn.get(h, '') not in ex_networks) and (cbn.get(h, '') not in ex_countries) and
+           (cbn.get(h, '') in only_countries or len(only_countries) == 0) and
+           (h[:-2] in only_networks or len(only_networks) == 0)):
+                valid.append(h)
+
+    # add enough nodes upto the requested number
+    if len(valid) + len(newlist) <= count:
+        [newlist.append(v) for v in valid]
+    elif len(valid) > 0:
+        for i in range(count - len(newlist)):
+            r = random.randint(0, len(valid) - 1)
+            newlist.append(valid[r])
+            valid.remove(valid[r])
     return newlist
 
 
