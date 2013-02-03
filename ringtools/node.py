@@ -49,7 +49,7 @@ class RingNode:
     STATE_CONNECTED = 1
     STATE_AUTHENTICATED = 2
 
-    def __init__(self, hostname=None, username=None, ssh_client=None, ssh_agent=None, ssh_config=None, timeout=DFLT_SSH_TIMEOUT):
+    def __init__(self, hostname=None, username=None, ssh_client=None, ssh_agent=None, ssh_config=None, timeout=DFLT_SSH_TIMEOUT, analyse=None):
         self.hostname = hostname
         self.username = username
         self.ssh_client = ssh_client
@@ -59,6 +59,7 @@ class RingNode:
         self.stdin = None
         self.stdout = None
         self.stderr = None
+        self.analyse = analyse
         
         if ssh_agent != None:
             self.ssh_agent = ssh_agent
@@ -156,13 +157,16 @@ class RingNode:
             self.state = RingNode.STATE_AUTHENTICATED
             channel.exec_command(command)
 
-        return NodeResult(
+        result = NodeResult(
             hostname = self.hostname,
             ssh_result= NodeResult.SSH_OK,
             exitcode = channel.recv_exit_status(),
             stdout = [line.strip() for line in self.stdout], 
             stderr = [line.strip() for line in self.stderr])
-
+    
+        if self.analyse:
+            self.analyse(result)
+        return result
 
     def get_state(self):
         return self.state
@@ -174,13 +178,14 @@ class NodeCommandThread(threading.Thread):
     ''' a thread for processing commands to a node via SSH
     '''
 
-    def __init__(self, queue, command, agent, timeout=DFLT_SSH_TIMEOUT, loglevel=LOG_NONE):
+    def __init__(self, queue, command, agent, timeout=DFLT_SSH_TIMEOUT, loglevel=LOG_NONE, analyse=None):
         self.queue = queue
         self.command = command
         self.agent = agent
         self.timeout = timeout
         self.result = NodeResultSet()
         self.loglevel = loglevel
+        self.analyse = analyse
         threading.Thread.__init__(self)
 
 
@@ -206,7 +211,7 @@ class NodeCommandThread(threading.Thread):
                 host = self.queue.get()
                 self.log("%s picked %s" % (self.name, host), LOG_DEBUG)
                 result = NodeResult(host)
-                node = RingNode(host)
+                node = RingNode(host, analyse=self.analyse)
                 try:
                     # some template replacements
                     cmd = self.command.replace("%%HOST%%", host)

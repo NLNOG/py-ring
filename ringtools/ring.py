@@ -40,7 +40,7 @@ _countries = []
 _has_v4 = {}
 
 
-def run_command(command, hosts, max_threads=DFLT_MAX_THREADS):
+def run_command(command, hosts, max_threads=DFLT_MAX_THREADS, analyse=None):
     ''' Run a command over a set of hosts using threading.
         A working SSH agent is for authentication.
     '''
@@ -51,7 +51,7 @@ def run_command(command, hosts, max_threads=DFLT_MAX_THREADS):
 
     # fork enough (but not too many) threads
     for i in range(min(max_threads, len(hosts))):
-        threads[i] = NodeCommandThread(queue, command, agent)
+        threads[i] = NodeCommandThread(queue, command, agent, analyse=analyse)
         threads[i].setDaemon(True)
         threads[i].start()
 
