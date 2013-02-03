@@ -18,6 +18,8 @@
 #
 # ===========================================================================
 
+import operator
+
 class NodeResult:
     ''' a class containing results of a specific node
     '''
