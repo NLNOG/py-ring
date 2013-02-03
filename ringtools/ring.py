@@ -155,8 +155,10 @@ def pick_nodes(count,
 
     # start with all explicitly included hosts
     if inc_hosts:
-        newlist = inc_hosts
-        [nodes.remove(h) for h in newlist]
+        for h in inc_hosts:
+            if h in nodes:
+                newlist.append(h)
+            nodes.remove(h)
 
     # for each network to be included pick a node
     for n in inc_networks:
