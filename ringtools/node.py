@@ -49,7 +49,7 @@ class RingNode:
     STATE_CONNECTED = 1
     STATE_AUTHENTICATED = 2
 
-    def __init__(self, hostname=None, username=None, ssh_client=None, ssh_agent=None, ssh_config=None, timeout=DFLT_SSH_TIMEOUT, analyse=None):
+    def __init__(self, hostname=None, username=None, ssh_client=None, ssh_agent=None, ssh_config=None, timeout=DFLT_SSH_TIMEOUT):
         self.hostname = hostname
         self.username = username
         self.ssh_client = ssh_client
@@ -59,7 +59,6 @@ class RingNode:
         self.stdin = None
         self.stdout = None
         self.stderr = None
-        self.analyse = analyse
         
         if ssh_agent != None:
             self.ssh_agent = ssh_agent
@@ -164,9 +163,8 @@ class RingNode:
             stdout = [line.strip() for line in self.stdout], 
             stderr = [line.strip() for line in self.stderr])
     
-        if self.analyse:
-            self.analyse(result)
         return result
+
 
     def get_state(self):
         return self.state
@@ -211,7 +209,7 @@ class NodeCommandThread(threading.Thread):
                 host = self.queue.get()
                 self.log("%s picked %s" % (self.name, host), LOG_DEBUG)
                 result = NodeResult(host)
-                node = RingNode(host, analyse=self.analyse)
+                node = RingNode(host)
                 try:
                     # some template replacements
                     cmd = self.command.replace("%%HOST%%", host)
@@ -220,6 +218,8 @@ class NodeCommandThread(threading.Thread):
                     result.set_ssh_errormsg(e.__str__())
                 finally:
                     node.close()
+                    if self.analyse:
+                        self.analyse(result)
 
                 result.add_value('runtime', time.time() - starttime)
                 self.result.append(result)

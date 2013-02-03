@@ -62,6 +62,8 @@ def run_command(command, hosts, max_threads=DFLT_MAX_THREADS, analyse=None):
     # wait for threads to be done
     queue.join()
 
+    time.sleep(1)
+
     # gather results
     result = NodeResultSet()
     for i in range(min(max_threads, len(hosts))):
