@@ -191,7 +191,7 @@ class NodeCommandThread(threading.Thread):
 
     def log(self, msg, loglevel=LOG_INFO):
         if self.loglevel >= loglevel:
-            print "[%s] %5s: %s" % (time.strftime('%H:%M:%S'), LOG_STR[loglevel], msg)
+            print "[%s] %5s: %s" % (time.strftime('%H:%M:%S', time.localtime()), LOG_STR[loglevel], msg)
             sys.stdout.flush()
 
 
