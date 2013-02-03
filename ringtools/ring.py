@@ -11,10 +11,9 @@
 # ======
 # Teun Vink - teun@teun.tv
 #
-# CHANGELOG
-# =========
-# v0.1  start coding
-# 
+# VERSION
+# =======
+# $Id$
 #
 # ===========================================================================
 
@@ -62,6 +61,7 @@ def run_command(command, hosts, max_threads=DFLT_MAX_THREADS, analyse=None):
     # wait for threads to be done
     queue.join()
 
+    # fix for some threading problems
     time.sleep(1)
 
     # gather results

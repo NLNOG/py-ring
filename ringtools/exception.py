@@ -11,6 +11,11 @@
 # ======
 # Teun Vink - teun@teun.tv
 #
+# VERSION
+# =======
+# $Id$
+#
+# =====================================================================
 
 class RingException(Exception):
     def __init__(self, message):
