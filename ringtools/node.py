@@ -141,8 +141,11 @@ class RingNode:
 
 
     def run_command(self, command):
+        t = time.time()
+
         if self.state == RingNode.STATE_DISCONNECTED:
             self.connect()
+
         if self.state == RingNode.STATE_CONNECTED:
             self.authenticate() 
 
@@ -214,6 +217,7 @@ class NodeCommandThread(threading.Thread):
                     cmd = self.command.replace("%%HOST%%", host)
                     result = node.run_command(cmd)
                 except RingException, e:
+                    result.set_ssh_result(NodeResult.SSH_ERROR)
                     result.set_ssh_errormsg(e.__str__())
                 finally:
                     node.close()

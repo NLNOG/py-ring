@@ -18,6 +18,7 @@
 # ===========================================================================
 
 import operator
+from exception import RingException
 
 class NodeResult:
     ''' a class containing results of a specific node
@@ -31,7 +32,7 @@ class NodeResult:
                  stdout=None, stderr=None):
         self.hostname = hostname
         self.ssh_result = ssh_result
-        self.ssh_errmsg = None
+        self.ssh_errormsg = None
         self.exitcode = exitcode
         self.stdout = stdout
         self.stderr = stderr
@@ -100,8 +101,8 @@ class NodeResult:
 
     def __repr__(self):
         if self.hostname:
-            return "<results for node %s. ssh_result: %d, ssh_errmsg: '%s', exitcode: %s, values: %s>" % (
-                self.hostname, self.ssh_result, self.ssh_errmsg, self.exitcode, 
+            return "<results for node %s. ssh_result: %s, ssh_errmsg: '%s', exitcode: %s, values: %s>" % (
+                self.hostname, self.ssh_result, self.ssh_errormsg, self.exitcode, 
                 ', '.join(["'%s': '%s'" % (x, self.get_value(x)) for x in self.get_values().keys()]))
         else:
             return "results for unknown node"
@@ -135,6 +136,15 @@ class NodeResultSet:
         return [r.get_hostname() for r in self.results]
 
 
+    def get_result(self, node):
+        for r in self.results:
+            if r.get_hostname() == node:
+                return r
+
+        # nothing found
+        raise RingException("Result for node %s not found in resultset." % node)
+
+
     def get_results(self):
         return self.results
 
@@ -156,11 +166,11 @@ class NodeResultSet:
         for result in self.results:
             e = result.get_exitcode()
             s = result.get_ssh_result()
-            if not e == 0:
-                if not only_ssh_problems and s == NodeResult.SSH_OK:
-                    results.append(result)
-                elif only_ssh_problems and include_ssh_problems and s != NodeResult.SSH_OK:
-                    results.append(result)
+            if e > 0 and not only_ssh_problems:
+                results.append(result)
+            elif s > 0 and include_ssh_problems:
+                results.append(result)
+
         return NodeResultSet(results)
 
     
@@ -175,8 +185,22 @@ class NodeResultSet:
         return result
 
 
-    def get_value_sorted(self, name):
-        return sorted(self.get_value(name).iteritems(), key=operator.itemgetter(1))
+    def get_value_sorted(self, name, reverse=False):
+        return sorted(self.get_value(name).iteritems(), key=operator.itemgetter(1), reverse=reverse)
+
+
+    def get_value_avg(self, name):
+        tot = 0
+        count = 0
+        for v in self.results:
+            val = v.get_value(name)
+            if isinstance(val, int) or isinstance(val, float):
+                tot += val
+                count += 1
+            else:
+                raise RingException("Cannot calculate average over non-numeric values.")
+
+        return tot/count if count > 0 else 0
 
 
     def __repr__(self):
