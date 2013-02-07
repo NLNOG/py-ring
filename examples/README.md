@@ -34,3 +34,14 @@ Show various variations of the `pick_nodes` function by
 including, excluding and requiring hosts, countries and
 networks, IPv4 support (or lack of it), and various 
 combinations of these properties.
+
+
+05-callback.py
+--------------
+Use a callback to a function using the `analyse` argument.
+This function can be used to perform actions after the 
+(attempt to execute the) command has been completed. In this
+example we use it to gather data from the output of a `ping`.
+Also, some additional features of the `NodeResultSet` class
+are shown: looking up specific values from all results,
+sorting results based on these values and calculating averages.
