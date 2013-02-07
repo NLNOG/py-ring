@@ -5,7 +5,7 @@ The following examples are available:
 01-ringinfo.py
 --------------
 Show some basic functionality of the ringtools module:
-* get the hostnames of all node (`ging.get_ring_nodes()`)
+* get the hostnames of all node (`get_ring_nodes()`)
 * get the names of the unique networks in the rings (`get_ring_networks()`)
 * get a list of all countries which have ringnodes (`get_ring_countries()`)
 * check if a hostname is an existing ringnode (`is_ring_node()`)
