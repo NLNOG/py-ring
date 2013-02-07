@@ -3,11 +3,11 @@
 import sys
 
 try:
-    from ringtools import ring, result
+    from ringtools import ring
 except ImportError:
     # ringtools probaly isn't installed globally yet
     sys.path.append('..')
-    from ringtools import ring, result
+    from ringtools import ring
 
 
 def callback(result):
