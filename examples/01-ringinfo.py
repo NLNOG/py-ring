@@ -1,6 +1,6 @@
 #! /usr/bin/env python
 
-# examples/example-base.py
+# examples/01-ringinfo.py
 #
 # show some base functions of the ringtools module.
 

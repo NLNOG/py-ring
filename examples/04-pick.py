@@ -1,6 +1,6 @@
 #! /usr/bin/env python
 
-# examples/pick.py
+# examples/04-pick.py
 #
 # show/test some uses of the pick_nodes() 
 

@@ -1,6 +1,6 @@
 #! /usr/bin/env python
 
-# examples/single-node.py
+# examples/03-single-node.py
 #
 # run a command on a single ringnode. Verify if the SSH connection was ok
 # and if so if the command excuted properly. Print the result if it did,
