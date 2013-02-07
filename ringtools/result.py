@@ -186,6 +186,8 @@ class NodeResultSet:
 
 
     def get_value_sorted(self, name, reverse=False):
+        '''return a sorted list of (host, value) tuples for variable 'name'
+        '''
         return sorted(self.get_value(name).iteritems(), key=operator.itemgetter(1), reverse=reverse)
 
 
@@ -201,6 +203,24 @@ class NodeResultSet:
                 raise RingException("Cannot calculate average over non-numeric values.")
 
         return tot/count if count > 0 else 0
+
+
+    def get_value_grouped(self, name, sort_by_hostcount=False):
+        '''Get a list of tuples (value, hosts) for variable 'name',
+           optionally sorted by the number of hosts per value.
+        '''
+        rev = {}
+        res = self.get_value(name)
+
+        for host in res:
+            if res[host] in rev.keys():
+                rev[res[host]].append(host)
+            else:
+                rev[res[host]] = [host]
+        if sort_by_hostcount:
+            return [(s, rev[s]) for s in sorted(rev.keys(), key=lambda l: len(rev[l]))]
+        else:
+            return sorted(rev.iteritems(), key=operator.itemgetter(1))
 
 
     def __repr__(self):
