@@ -1,21 +1,20 @@
 #! /usr/bin/env python
-#
+"""
+A python module to interact with the NLNOG ring.
+"""
+
 # ABOUT
 # =====
-# py-ring - A generic module for running commands on nodes of the NLNOG 
-# ring. More information about the ring: https://ring.nlnog.net
-#
-# source code: https://github.com/NLNOG/py-ring 
-#
+# This file is part of:
+# 
+# ringtools - A generic module for running commands on nodes of the NLNOG 
+# ring. More information about the ring: U{https://ring.nlnog.net}
+# 
+# source code: U{https://github.com/NLNOG/py-ring}
+# 
 # AUTHOR
 # ======
 # Teun Vink - teun@teun.tv
-#
-# VERSION
-# =======
-# $Id$
-#
-# ===========================================================================
 
 import Queue, random, time
 from dns.resolver import query
@@ -26,10 +25,10 @@ from exception import RingException
 from node import RingNode, NodeCommandThread
 from result import NodeResult, NodeResultSet
 
-from paramiko import Agent
 # ===========================================================================
 
-DFLT_MAX_THREADS = 25           # number of concurrent threads
+# number of concurrent threads
+DFLT_MAX_THREADS = 25
 
 # ===========================================================================
 
@@ -41,7 +40,25 @@ _has_v4 = {}
 
 def run_command(command, hosts, max_threads=DFLT_MAX_THREADS, analyse=None):
     ''' Run a command over a set of hosts using threading.
-        A working SSH agent is for authentication.
+        A working SSH agent is needed for authentication.
+        
+        @param command: the command to be executed on the specified hosts.
+        @type command: string
+
+        @param hosts: the hosts on which the command is to be executed
+        @type hosts: list
+
+        @param max_threads: the number of concurrent threads used to
+        interact with nodes
+        @type max_threads: int
+
+        @param analyse: a function which can be called to analyse the
+        results of the execution of the command for each host. Argument
+        of the function should be a L{NodeResult} variable.
+        @type analyse: function
+
+        @return: a L{NodeResultSet} with results for all hosts
+        @rtype: NodeResultSet
     '''
 
     agent = Agent()
@@ -73,8 +90,14 @@ def run_command(command, hosts, max_threads=DFLT_MAX_THREADS, analyse=None):
 
 
 def get_ring_nodes(country=None):
-    '''Get a list of all ring hosts using a TCP DNS query.
-       Optionally, specify the country for which the lookup has to be done.
+    ''' Get a list of all ring hosts.
+        
+        @param country: list only nodes hosted in this country. If not specified
+        nodes in all countries are returned.
+        @type country: str
+
+        @return: a list of node names
+        @rtype: list of strings
     '''
     global _nodes
 
@@ -99,7 +122,10 @@ def get_ring_nodes(country=None):
 
 
 def get_ring_countries():
-    '''Get a list of all ring countries.
+    ''' Get a list of all ring countries.
+        
+        @return: a list of country codes
+        @rtype: list of strings
     '''
 
     global _countries
@@ -123,7 +149,10 @@ def get_ring_countries():
 
 
 def get_ring_networks():
-    '''Get a list of all ring networks.
+    ''' Get a list of all ring networks.
+        
+        @return: a list of all network names
+        @rtype: list of strings
     '''
 
     networks = {}
@@ -138,7 +167,44 @@ def pick_nodes(count,
                inc_countries=[], ex_countries=[], only_countries=[],  
                inc_networks=[], ex_networks=[], only_networks=[],
                support_ipv4=None, support_ipv6_only=None):
-    '''Pick a set of ring hosts, specific filters can be given optionally
+    ''' Pick a set of ring hosts based on given criteria. If more nodes match
+        the given criteria random nodes are picked.
+
+        @param count: the number of hosts to be picked (at most)
+        @type count: integer
+
+        @param inc_hosts: hosts which must be included
+        @type inc_hosts: string or list of strings
+
+        @param ex_hosts: hosts which must be excluded
+        @type ex_hosts: string or list of strings
+
+        @param inc_countries: countries from which at least one node must be included
+        @type inc_countries: string or list of strings
+
+        @param ex_countries: countries which must be excluded
+        @type ex_countries: string or list of strings
+
+        @param only_countries: all nodes picked must be in these countries
+        @type only_countries: string or list of strings
+
+        @param inc_networks: networks from which at least one node must be included
+        @type inc_networks: string or list of strings
+
+        @param ex_networks: networks which must be excluded
+        @type ex_networks: string or list of strings
+
+        @param only_networks: all nodes picked must be in these networks
+        @type only_networks: string or list of strings
+
+        @param support_ipv4: all nodes picked must support IPv4 (dual-stacked)
+        @type support_ipv4: boolean
+
+        @param support_ipv6_only: all nodes picked must be IPv6-only
+        @type support_ipv6_only: boolean
+
+        @return: a list of nodes matching the given criteria
+        @rtype: list of strings
     '''
     random.seed(time.time())
     nodes = get_ring_nodes()
@@ -232,21 +298,35 @@ def pick_nodes(count,
     return newlist
 
 
-def is_ring_node(host):
-    '''determine if a name is a name of an existing ringnode
+def is_ring_node(name):
+    ''' Determine if a name is a name of an existing ringnode.
+
+        @param name: the name to be checked
+        @type name: string
+
+        @return: I{True} if the name is a valid node name, else I{False}
+        @rtype: boolean
     '''
-    return host in get_ring_nodes()
+    return name in get_ring_nodes()
 
 
 def is_ring_country(country):
-    '''determine if a country has any ringnodes.
-    '''
+    ''' Determine if a country has any ring nodes.
 
+        @param country: the country to be checked
+        @type country: string
+
+        @return: I{True} if the country has any nodes, else I{False}
+        @rtype: boolean
+    '''
     return country in get_ring_countries()
 
 
 def get_countries_by_node():
-    '''Get a map of node->country entries
+    ''' Get a dictionary containing the country a node is in for each node. 
+        
+        @return: a dictionary containing node->country mappings
+        @rtype: dictionary
     '''
     result = {}
     countries = get_ring_countries()
@@ -259,7 +339,10 @@ def get_countries_by_node():
 
 
 def get_nodes_by_country():
-    '''Get a list of all nodes per country
+    ''' Get a dictionary containing all nodes per country.
+
+        @return: a dictonary containing country->list of nodes mappings
+        @rtype: dictionary
     '''
     result = {}
     countries = get_ring_countries()
@@ -273,7 +356,10 @@ def get_nodes_by_country():
 
 
 def get_nodes_by_network():
-    '''Get a list of all nodes for a network
+    ''' Get a dictionary containing all nodes per network.
+
+        @return: a dictionary containing network->list of nodes mappings
+        @rtype: dictionary
     '''
     result = {}
     nodes = get_ring_nodes()
@@ -286,14 +372,26 @@ def get_nodes_by_network():
 
 
 def get_node_country(node):
-    '''Look up in which country a node is
+    ''' Look up in which country a node is
+
+        @param node: the name of the node
+        @type node: string
+
+        @return: the country code of the node
+        @rtype: string
     '''
 
     return get_countries_by_node()[node]
 
 
 def node_has_ipv4(node):
-    '''determine if a node support ipv4
+    ''' Determine if a node supports ipv4
+    
+        @param node: the name of the node
+        @type node: string
+
+        @return: I{True} if the node has an IPv4 address, else I{False}
+        @rtype: boolean
     '''
     global _has_v4
 

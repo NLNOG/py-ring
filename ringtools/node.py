@@ -1,21 +1,20 @@
 #! /usr/bin/env python
-#
+"""
+A node in the NLNOG ring.
+"""
+
 # ABOUT
 # =====
-# py-ring - A generic module for running commands on nodes of the NLNOG 
-# ring. More information about the ring: https://ring.nlnog.net
-#
-# source code: https://github.com/NLNOG/py-ring 
-#
+# This file is part of:
+# 
+# ringtools - A generic module for running commands on nodes of the NLNOG 
+# ring. More information about the ring: U{https://ring.nlnog.net}
+# 
+# source code: U{https://github.com/NLNOG/py-ring}
+# 
 # AUTHOR
 # ======
 # Teun Vink - teun@teun.tv
-#
-# VERSION
-# =======
-# $Id$
-#
-# ===========================================================================
 
 import threading, sys, Queue, os, time, socket
 from paramiko import *
@@ -44,11 +43,54 @@ VERSION = "0.1"
 # ===========================================================================
 
 class RingNode:
+    """ 
+    A node of the NLNOG ring.
+    """
+
     STATE_DISCONNECTED = 0
     STATE_CONNECTED = 1
     STATE_AUTHENTICATED = 2
 
     def __init__(self, hostname=None, username=None, ssh_client=None, ssh_agent=None, ssh_config=None, timeout=DFLT_SSH_TIMEOUT):
+        """ Create a new RingNode object.
+
+            @param hostname: the host in the ring to connect to
+            @type hostname: string
+
+            @param username: the username used when authenticating using SSH. 
+            If no I{username} is specified the SSH configuration is checked.
+            @type username: string
+
+            @param ssh_client: a I{paramiko.SSHClient} object. If none is
+            specified a new one is created. Passing this as an argument is
+            useful when a lot of L{RingNode} objects are created: only one
+            SSHClient object is used then. 
+            
+            I{Not providing this parameter is no problem.}
+
+            @type ssh_client: paramiko.SSHClient
+
+            @param ssh_agent: a I{paramiko.Agent} object. If none is specified
+            a new agent object is created. Passing this as asn argument is useful
+            when a lot of L{RingNode} objects are created: only one SSHAgent object
+            is used.
+
+            I{Not providing this parameter is no problem.}
+
+            @type ssh_agent: paramiko.Agent
+
+            @param ssh_config: a I{paramiko.SSHConfig} object. If none is specified
+            a new object is created. Passing this as asn argument is useful
+            when a lot of L{RingNode} objects are created: only one SSHConfig object
+            is used.
+
+            I{Not providing this parameter is no problem.}
+
+            @type ssh_config: paramiko.SSHConfig
+
+            @param timeout: SSH timeout in seconds
+            @type timeout: integer
+        """
         self.hostname = hostname
         self.username = username
         self.ssh_client = ssh_client
@@ -66,6 +108,8 @@ class RingNode:
 
 
     def close(self):
+        """ Close the SSH connection to the node.
+        """
         if self.ssh_client != None:
             self.ssh_client.close()
 

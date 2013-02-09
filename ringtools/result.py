@@ -1,21 +1,20 @@
 #! /usr/bin/env python
-#
+"""
+Results of commands performed on the ring.
+"""
+
 # ABOUT
 # =====
-# py-ring - A generic module for running commands on nodes of the NLNOG 
-# ring. More information about the ring: https://ring.nlnog.net
-#
-# source code: https://github.com/NLNOG/py-ring 
-#
+# This file is part of:
+# 
+# ringtools - A generic module for running commands on nodes of the NLNOG 
+# ring. More information about the ring: U{https://ring.nlnog.net}
+# 
+# source code: U{https://github.com/NLNOG/py-ring}
+# 
 # AUTHOR
 # ======
 # Teun Vink - teun@teun.tv
-#
-# VERSION
-# =========
-# $Id$
-#
-# ===========================================================================
 
 import operator
 from exception import RingException

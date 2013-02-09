@@ -1,23 +1,25 @@
 #! /usr/bin/env python
-#
+"""
+Exceptions defined by ringtools
+"""
+
 # ABOUT
 # =====
-# py-ring - A generic module for running commands on nodes of the NLNOG 
-# ring. More information about the ring: https://ring.nlnog.net
-#
-# source code: https://github.com/NLNOG/py-ring 
-#
+# This file is part of:
+# 
+# ringtools - A generic module for running commands on nodes of the NLNOG 
+# ring. More information about the ring: U{https://ring.nlnog.net}
+# 
+# source code: U{https://github.com/NLNOG/py-ring}
+# 
 # AUTHOR
 # ======
 # Teun Vink - teun@teun.tv
-#
-# VERSION
-# =======
-# $Id$
-#
-# =====================================================================
 
 class RingException(Exception):
+    """
+    The generic ringtools  exception used for errors.
+    """
     def __init__(self, message):
         self.message = message
 
