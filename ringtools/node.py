@@ -115,6 +115,17 @@ class RingNode:
 
     
     def connect(self, hostname=None, timeout=DFLT_SSH_TIMEOUT):
+        """ Open a SSH connection to the host. If ssh_client and ssh_config were not
+            specified when constructing the object they are created.
+
+            @param hostname: the name of the host to connect to (needed if not specified when making the object)
+            @type hostname: string
+
+            @param timeout: SSH timeout in seconds
+            @type timeout: integer
+
+            @raise RingException: when the connection failed
+        """
         if hostname == None and self.hostname == None:
             # no idea what host to connect to
             self.state = RingNode.STATE_DISCONNECTED
@@ -152,13 +163,19 @@ class RingNode:
             raise RingException(e)
         except socket.error, e:
             self.state = RingNode.STATE_DISCONNECTED
-            raise RingException(e)
+            raise RingException(e.__str__())
         except socket.timeout, e:
             self.state = RingNode.STATE_DISCONNECTED
             raise RingException('Socket timeout.')
     
 
     def authenticate(self):
+        """ Authenticate on the SSH session.
+            If the SSH agent provides more than on SSH-key all of the
+            keys are tried.
+
+            @raise RingException: if the authentication failed
+        """
         if self.state == RingNode.STATE_DISCONNECTED or self.ssh_client == None or self.ssh_agent == None:
             connect()
                 
@@ -185,8 +202,16 @@ class RingNode:
 
 
     def run_command(self, command):
-        t = time.time()
+        """ Execute a command using the SSH connection.
+            Create a connection and authenticate if not done yet.
 
+            @param command: the command to be executed
+            @type command: string
+
+            @return: object containing the exitcode, 
+            output of stdout and stderr and additional data
+            @rtype NodeResult
+        """
         if self.state == RingNode.STATE_DISCONNECTED:
             self.connect()
 
@@ -213,6 +238,12 @@ class RingNode:
 
 
     def get_state(self):
+        """ Return the state of the SSH connection.
+
+            return: state (STATE_DISCONNECTED = 0, 
+            STATE_CONNECTED = 1, STATE_AUTHENTICATED = 2)
+            rtype integer
+        """
         return self.state
 
 # ===========================================================================
@@ -223,6 +254,27 @@ class NodeCommandThread(threading.Thread):
     '''
 
     def __init__(self, queue, command, agent, timeout=DFLT_SSH_TIMEOUT, loglevel=LOG_NONE, analyse=None):
+        """ Create a new NodeCommandThread object.
+
+            @param queue: a list of nodes on which the commands is to be executed
+            @type queue: list of strings
+            
+            @param command: the command to be executed
+            @type command: string
+        
+            @param agent: a I{paramiko.Agent} SSH-agent object.
+            @type agent: I{paramiko.Agent} object
+
+            @param timeout: the SSH timeout in seconds
+            @type timeout: integer
+
+            @param loglevel: the level of logdetail
+            @type loglevel: integer
+
+            @param analyse: callback analyse function. This function is called after
+            the command has been executed. Argument for the function is a L{NodeResult} object.
+            @type analyse: function
+        """
         self.queue = queue
         self.command = command
         self.agent = agent
@@ -240,9 +292,13 @@ class NodeCommandThread(threading.Thread):
 
 
     def run(self):
+        """ Execution of the thread.
+        """
         # read default SSH config
         ssh = SSHClient()
         conf = SSHConfig()
+        
+        # use the local SSH configuration for keys, known hosts, etc
         conf.parse(open(os.path.join(os.environ['HOME'], '.ssh', 'config'), 'r'))
         ssh.set_missing_host_key_policy(AutoAddPolicy())
         ssh.load_system_host_keys()
@@ -280,4 +336,9 @@ class NodeCommandThread(threading.Thread):
 
 
     def get_result(self):
+        """ Get the result of the execution of the command.
+
+            @return: L{NodeResult} object with all information
+            @rtype: NodeResult
+        """
         return self.result

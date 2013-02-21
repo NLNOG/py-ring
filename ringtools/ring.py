@@ -222,20 +222,36 @@ def pick_nodes(count,
         
     if isinstance(inc_hosts, str):
         inc_hosts = [inc_hosts]
+    elif inc_hosts == None:
+        inc_hosts = []
     if isinstance(ex_hosts, str):
         ex_hosts = [ex_hosts]
+    elif ex_hosts == None:
+        ex_hosts = []
     if isinstance(inc_networks, str):
         inc_networks = [inc_networks]
+    elif inc_networks == None:
+        inc_networks = []
     if isinstance(ex_networks, str):
         ex_networks = [ex_networks]
+    elif ex_networks == None:
+        ex_networks = []
     if isinstance(only_networks, str):
         only_networks = [only_networks]
+    elif only_networks == None:
+        only_networks = []
     if isinstance(inc_countries, str):
         inc_countries = [inc_countries]
+    elif inc_countries == None:
+        inc_countries = []
     if isinstance(ex_countries, str):
         ex_countries = [ex_countries]
+    elif ex_countries == None:
+        ex_countries = []
     if isinstance(only_countries, str):
         only_countries = [only_countries]
+    elif only_countries == None:
+        only_countries = []
    
     newlist = []
 
