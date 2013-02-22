@@ -22,23 +22,10 @@ from paramiko import *
 from exception import RingException
 from result import NodeResult, NodeResultSet
 
-# ===========================================================================
 
 DFLT_SSH_TIMEOUT = 20           # seconds
 DFLT_FQDN = "ring.nlnog.net"    # fqdn for nodes
 DFLT_MAX_THREADS = 25           # number of concurrent threads
-
-LOG_NONE  = 0
-LOG_FATAL = 1
-LOG_ERROR = 2
-LOG_WARN  = 3
-LOG_INFO  = 4
-LOG_DEBUG = 5 
-
-LOG_STR = [ "", "FATAL", "ERROR", "WARN", "INFO", "DEBUG" ]
-
-VERSION = "0.1"
-
 
 # ===========================================================================
 
@@ -253,7 +240,7 @@ class NodeCommandThread(threading.Thread):
     ''' a thread for processing commands to a node via SSH
     '''
 
-    def __init__(self, queue, command, agent, timeout=DFLT_SSH_TIMEOUT, loglevel=LOG_NONE, analyse=None):
+    def __init__(self, queue, command, agent, timeout=DFLT_SSH_TIMEOUT, analyse=None):
         """ Create a new NodeCommandThread object.
 
             @param queue: a list of nodes on which the commands is to be executed
@@ -268,9 +255,6 @@ class NodeCommandThread(threading.Thread):
             @param timeout: the SSH timeout in seconds
             @type timeout: integer
 
-            @param loglevel: the level of logdetail
-            @type loglevel: integer
-
             @param analyse: callback analyse function. This function is called after
             the command has been executed. Argument for the function is a L{NodeResult} object.
             @type analyse: function
@@ -280,15 +264,8 @@ class NodeCommandThread(threading.Thread):
         self.agent = agent
         self.timeout = timeout
         self.result = NodeResultSet()
-        self.loglevel = loglevel
         self.analyse = analyse
         threading.Thread.__init__(self)
-
-
-    def log(self, msg, loglevel=LOG_INFO):
-        if self.loglevel >= loglevel:
-            print "[%s] %5s: %s" % (time.strftime('%H:%M:%S', time.localtime()), LOG_STR[loglevel], msg)
-            sys.stdout.flush()
 
 
     def run(self):
@@ -309,7 +286,6 @@ class NodeCommandThread(threading.Thread):
                 starttime = time.time()
                 # pick the next available host
                 host = self.queue.get()
-                self.log("%s picked %s" % (self.name, host), LOG_DEBUG)
                 result = NodeResult(host)
                 node = RingNode(host)
                 try:
@@ -331,7 +307,6 @@ class NodeCommandThread(threading.Thread):
                 # we're done!
                 pass
             finally:
-                self.log("%s is finished" % self.name, LOG_DEBUG)
                 self.queue.task_done() 
 
 
