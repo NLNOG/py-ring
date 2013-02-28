@@ -16,7 +16,7 @@ A python module to interact with the NLNOG ring.
 # ======
 # Teun Vink - teun@teun.tv
 
-import Queue, random, time, sys
+import Queue, random, time, sys, urllib, urllib2
 from dns.resolver import query
 from dns.exception import DNSException
 from paramiko import Agent
@@ -29,6 +29,9 @@ from result import NodeResult, NodeResultSet
 
 # number of concurrent threads
 DFLT_MAX_THREADS = 25
+
+# pastebin address
+PASTEBIN = "https://ring.nlnog.net/paste/"
 
 # ===========================================================================
 
@@ -426,3 +429,31 @@ def node_has_ipv4(node):
         except DNSException:
             _has_v4[node] = False
             return False
+
+
+def pastebin(text):
+    ''' Put text on the NLNOG pastebin
+        
+        @param text: the text to put on the pastebin
+        @type text: string
+
+        @return: the unique pastebin url
+        @rtype: string
+
+        @raise RingException: if the paste fails
+    '''
+    postarray = [
+        ("content", text),
+        ("mimetype", "text/html"),
+        ("ttl", 604800)
+    ]
+    postdata = urllib.urlencode(postarray)
+    try:
+        req = urllib2.Request(url=PASTEBIN, data=postdata)   
+        result = urllib2.urlopen(req)
+        if result.url == PASTEBIN:
+            raise RingException("failed to put the text on the pastebin.")
+        else:
+            return result.url
+    except:
+        raise RingException("failed to put the text on the pastebin.")
