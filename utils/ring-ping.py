@@ -146,8 +146,8 @@ def main():
     cmd_result = ring.run_command('ping%s -c1 -q %s' % ("6" if ns.ipv6 else "", ns.destination), 
         nodes, max_threads=ns.threads, analyse=analyzer)
     ok = cmd_result.get_successful_results()
-    conn = cmd_result.get_failed_results(include_ssh_problems=False)
-    fail = cmd_result.get_failed_results(only_ssh_problems=True)
+    fail = cmd_result.get_failed_results(include_ssh_problems=False)
+    conn = cmd_result.get_failed_results(only_ssh_problems=True)
 
     sort = ok.get_value_sorted("avg")
     cbn = ring.get_countries_by_node()
@@ -162,12 +162,15 @@ def main():
             print "\nconnection failures:"
             for r in conn.get_results():
                 hostname = "%s (%s):" % (r.get_hostname(), cbn[r.get_hostname()].upper())
-                print "%-28s exitcode = %s, message = %s" % (hostname, r.get_exitcode(), r.get_stderr()[0])
+                print "%-28s %s" % (hostname, r.get_ssh_errormsg())
+
         if len(fail.get_results()) > 0 and ns.errors:
             print "\ncommand execution problems:"
             for r in fail.get_results():
                 hostname = "%s (%s):" % (r.get_hostname(), cbn[r.get_hostname()].upper())
-                print "%-28s %s" % (hostname, r.get_ssh_errormsg())
+                msg = ", message: %s" % r.get_stderr()[0] if r.get_stderr() != None else ""
+                print "%-28s exitcode = %s%s" % (hostname, r.get_exitcode(), msg)
+
 
         print
 
