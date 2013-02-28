@@ -16,7 +16,7 @@ A python module to interact with the NLNOG ring.
 # ======
 # Teun Vink - teun@teun.tv
 
-import Queue, random, time
+import Queue, random, time, sys
 from dns.resolver import query
 from dns.exception import DNSException
 from paramiko import Agent
@@ -213,6 +213,9 @@ def pick_nodes(count,
     nbn = get_nodes_by_network()
     networks = get_ring_networks()
     v4 = {} 
+
+    if count == 0:
+        count = sys.maxint
 
     if support_ipv4 != None and support_ipv4 == False:
         support_ipv6_only = True
