@@ -266,7 +266,7 @@ def pick_nodes(count,
         for h in inc_hosts:
             if h in nodes:
                 newlist.append(h)
-            nodes.remove(h)
+                nodes.remove(h)
 
     # for each network to be included pick a node
     for n in inc_networks:
