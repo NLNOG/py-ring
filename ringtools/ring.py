@@ -16,9 +16,7 @@ A python module to interact with the NLNOG ring.
 # ======
 # Teun Vink - teun@teun.tv
 
-import Queue, random, time, sys, urllib, urllib2
-from dns.resolver import query
-from dns.exception import DNSException
+import Queue, random, time, sys, urllib, urllib2, simplejson
 from paramiko import Agent
 
 from exception import RingException
@@ -33,12 +31,14 @@ DFLT_MAX_THREADS = 25
 # pastebin address
 PASTEBIN = "https://ring.nlnog.net/paste/"
 
+# ring API
+RING_API = "https://ring.nlnog.net/api/1.0/"
+
 # ===========================================================================
 
-# caches for DNS queries
-_nodes = []
-_countries = []
-_has_v4 = {}
+# caches for data
+_nodes = {}
+_countries = {}
 
 
 def run_command(command, hosts, max_threads=DFLT_MAX_THREADS, analyse=None):
@@ -102,26 +102,29 @@ def get_ring_nodes(country=None):
         @return: a list of node names
         @rtype: list of strings
     '''
-    global _nodes
+    global _nodes, _countries
 
     if _nodes and not country:
-        return _nodes[:]
+        return _nodes.keys()
+    elif _nodes and _countries:
+        return _countries[country.upper()].keys()
 
-    hosts = []
     try:
-        # TCP query required due to the large TXT record
-        qres = query("%sring.nlnog.net" % ("%s." % country if country != None else ''), "TXT", tcp=True)
-        for rr in qres:
-            for s in rr.strings:
-                for srv in s.split(' '):
-                    hosts.append(srv)
-    except DNSException, e:
-        return []
-
-    hosts.sort()
-    if not country:
-        _nodes = hosts[:]
-    return hosts
+        req = urllib2.Request("%snodes%s" % (RING_API, "/country/%s" % country.upper() if country != None else ''))
+        opener = urllib2.build_opener()
+        f = opener.open(req)
+        result = simplejson.load(f)
+        if result["info"]["success"] == 1:
+            nodes = {}
+            for host in result["results"]["nodes"]:
+                nodes[host["hostname"].replace(".ring.nlnog.net", "")] = host
+                if not _countries.has_key(host['countrycode']):
+                    _countries[host['countrycode']] = {}
+                _countries[host["countrycode"]][host["hostname"].replace(".ring.nlnog.net", "")] = host
+        _nodes = nodes
+        return nodes.keys()
+    except Exception, e:
+        return {}
 
 
 def get_ring_countries():
@@ -133,22 +136,13 @@ def get_ring_countries():
 
     global _countries
     if _countries:
-        return _countries[:]
+        return _countries.keys()
+    
+    # update node list
+    nodes = get_ring_nodes()
 
-    countries = []
-    try:
-        # TCP query required due to the large TXT record
-        qres = query("countries.ring.nlnog.net", "TXT", tcp=True)
-        for rr in qres:
-            for s in rr.strings:
-                for srv in s.split(' '):
-                    countries.append(srv)
-    except DNSException, e:
-        return []
-
-    countries.sort()
-    _countries = countries[:]
-    return countries
+    # _countries is now available
+    return _countries.keys()
 
 
 def get_ring_networks():
@@ -224,41 +218,55 @@ def pick_nodes(count,
         support_ipv6_only = True
 
     for node in nodes:
-        v4[node] = node_has_ipv4(node)
+        v4[node] = get_node_details(node)["ipv4"] != None
         
     if isinstance(inc_hosts, str):
         inc_hosts = [inc_hosts]
     elif inc_hosts == None:
         inc_hosts = []
+
     if isinstance(ex_hosts, str):
         ex_hosts = [ex_hosts]
     elif ex_hosts == None:
         ex_hosts = []
+
     if isinstance(inc_networks, str):
         inc_networks = [inc_networks]
     elif inc_networks == None:
         inc_networks = []
+
     if isinstance(ex_networks, str):
         ex_networks = [ex_networks]
     elif ex_networks == None:
         ex_networks = []
+
     if isinstance(only_networks, str):
         only_networks = [only_networks]
     elif only_networks == None:
         only_networks = []
+
     if isinstance(inc_countries, str):
-        inc_countries = [inc_countries]
+        inc_countries = [inc_countries.upper()]
     elif inc_countries == None:
         inc_countries = []
+    else:
+        inc_countries = [c.upper() for c in inc_countries]
+
     if isinstance(ex_countries, str):
-        ex_countries = [ex_countries]
+        ex_countries = [ex_countries.upper()]
     elif ex_countries == None:
         ex_countries = []
+    else:
+        ex_countries = [c.upper() for c in ex_countries]
+
     if isinstance(only_countries, str):
-        only_countries = [only_countries]
+        only_countries = [only_countries.upper()]
     elif only_countries == None:
         only_countries = []
-   
+    else:
+        only_countries = [c.upper() for c in only_countries]
+
+
     newlist = []
 
     # start with all explicitly included hosts
@@ -275,8 +283,8 @@ def pick_nodes(count,
             if ((not h in newlist) and (not h in ex_hosts) and
                ((support_ipv4 != None and ((support_ipv4 and v4.get(h, False)) or not support_ipv4)) or support_ipv4 == None) and
                ((support_ipv6_only != None and ((support_ipv6_only and not v4.get(h, True)) or not support_ipv6_only)) or support_ipv6_only == None) and
-               (cbn.get(h, '') not in ex_countries) and 
-               (cbn.get(h, '') in only_countries or len(only_countries) == 0)):
+               (cbn.get(h, '').upper() not in ex_countries) and 
+               (cbn.get(h, '').upper() in only_countries or len(only_countries) == 0)):
                     valid.append(h)
         if len(valid) > 0:
             r = random.randint(0, len(valid) - 1)
@@ -304,8 +312,8 @@ def pick_nodes(count,
         if ((not h in newlist) and (not h in ex_hosts) and
            ((support_ipv4 != None and ((support_ipv4 and v4.get(h, False)) or not support_ipv4)) or support_ipv4 == None) and
            ((support_ipv6_only != None and ((support_ipv6_only and not v4.get(h, True)) or not support_ipv6_only)) or support_ipv6_only == None) and
-           (nbn.get(h, '') not in ex_networks) and (cbn.get(h, '') not in ex_countries) and
-           (cbn.get(h, '') in only_countries or len(only_countries) == 0) and
+           (nbn.get(h, '').upper() not in ex_networks) and (cbn.get(h, '') not in ex_countries) and
+           (cbn.get(h, '').upper() in only_countries or len(only_countries) == 0) and
            (h[:-2] in only_networks or len(only_networks) == 0)):
                 valid.append(h)
 
@@ -341,7 +349,7 @@ def is_ring_country(country):
         @return: I{True} if the country has any nodes, else I{False}
         @rtype: boolean
     '''
-    return country in get_ring_countries()
+    return country.upper() in get_ring_countries()
 
 
 def get_countries_by_node():
@@ -406,29 +414,22 @@ def get_node_country(node):
     return get_countries_by_node()[node]
 
 
-def node_has_ipv4(node):
-    ''' Determine if a node supports ipv4
-    
+def get_node_details(node):
+    ''' Get detailed information of a node
+
         @param node: the name of the node
         @type node: string
-
-        @return: I{True} if the node has an IPv4 address, else I{False}
-        @rtype: boolean
+        
+        @return: a dictionary with detailed info
+        @rtype: dictionary
     '''
-    global _has_v4
+    global _nodes
 
-    if not node in get_ring_nodes():
-        return False
-    elif node in _has_v4:
-        return _has_v4[node]
+    nodes = get_ring_nodes()
+    if node in nodes:
+        return _nodes[node]
     else:
-        try:
-            result = query("%s.ring.nlnog.net" % node, "A")
-            _has_v4[node] = True
-            return True
-        except DNSException:
-            _has_v4[node] = False
-            return False
+        return None
 
 
 def pastebin(text):
