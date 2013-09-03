@@ -18,7 +18,7 @@ except ImportError:
 print "max 5 nodes: %s " % ring.pick_nodes(5) 
 print "max 5 nodes, including bit01: %s" % ring.pick_nodes(5, inc_hosts="bit01") 
 print "max 5 nodes, including one from amazon: %s" % ring.pick_nodes(5, inc_networks="amazon") 
-print "max 5 nodes, including one in france: %s" % ring.pick_nodes(5, inc_countries="fr") 
+print "max 5 nodes, including one in France: %s" % ring.pick_nodes(5, inc_countries="fr") 
 print "max 5 nodes, only from atrato network: %s" % ring.pick_nodes(5, only_networks="atrato")
 print "max 5 nodes, only from .nl: %s" % ring.pick_nodes(5, only_countries="nl")
 print "max 5 nodes, all ipv6 only: %s " % ring.pick_nodes(5, support_ipv6_only=True) 
@@ -32,4 +32,4 @@ print "max 5 nodes, ipv6 only + dual stack: %s " % ring.pick_nodes(5, support_ip
 # and we can combine these
 print "max 5 nodes, ipv6 only and not in .nl: %s" % ring.pick_nodes(5, support_ipv6_only=True, ex_countries='nl')
 print "max 5 nodes, at least one from claranet and one in belgium: %s" % ring.pick_nodes(5, inc_networks="claranet", inc_countries="be")
-print "max 5 nodes, only from japan and poland: %s" % ring.pick_nodes(5, only_countries=["jp","pl"])
+print "max 5 nodes, only from Japan and Poland: %s" % ring.pick_nodes(5, only_countries=["jp","pl"])

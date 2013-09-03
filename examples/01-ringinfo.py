@@ -28,8 +28,15 @@ print "bit01 is a ringnode: %s" % ring.is_ring_node('bit01')
 print "bit02 is a ringnode: %s" % ring.is_ring_node('bit02')
 
 # check legacy IPv4 support ;-)
-print "surfnet01 support IPv4: %s" % ring.node_has_ipv4('surfnet01')
-print "nlnetlabs01 support IPv4: %s" % ring.node_has_ipv4('nlnetlabs01')
+print "surfnet01 IPv4: %s" % ring.get_node_details('surfnet01')['ipv4']
+print "nlnetlabs01 IPv6: %s" % ring.get_node_details('nlnetlabs01')['ipv6']
+
+# more node details
+print "location and datacenter of dyn01: %s, %s" % (
+    ring.get_node_details('dyn01')['datacenter'], 
+    ring.get_node_details('dyn01')['geo'])
+
+print "ASN of node apnic01: %s" % ring.get_node_details('apnic01')['asn']
 
 # all nodes in France
 print "all French nodes: %s" % ", ".join(ring.get_ring_nodes('fr'))
