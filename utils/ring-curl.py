@@ -154,7 +154,8 @@ def main():
         inc_hosts=in_nodes, ex_hosts=ex_nodes,
         inc_countries=in_countries, ex_countries=ex_countries,
         only_countries=only_countries, inc_networks=in_networks,
-        ex_networks=ex_networks, only_networks=only_networks)
+        ex_networks=ex_networks, only_networks=only_networks, 
+        active_only=True)
 
     if not ns.quiet:
         print "ring-curl v%s written by Teun Vink <teun@teun.tv>\n" % VERSION

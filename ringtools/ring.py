@@ -92,14 +92,18 @@ def run_command(command, hosts, max_threads=DFLT_MAX_THREADS, analyse=None):
     return result
 
 
-def get_ring_nodes(country=None):
+def get_ring_nodes(country=None, active_only=False):
     ''' Get a list of all ring hosts.
         
         @param country: list only nodes hosted in this country. If not specified
         nodes in all countries are returned.
         @type country: str
 
+        @param active_only: list only active nodes
+        @type active_only: boolean
+
         @return: a list of node names
+
         @rtype: list of strings
     '''
     global _nodes, _countries
@@ -163,7 +167,8 @@ def pick_nodes(count,
                inc_hosts=[], ex_hosts=[], 
                inc_countries=[], ex_countries=[], only_countries=[],  
                inc_networks=[], ex_networks=[], only_networks=[],
-               support_ipv4=None, support_ipv6_only=None):
+               support_ipv4=None, support_ipv6_only=None,
+               active_only=True):
     ''' Pick a set of ring hosts based on given criteria. If more nodes match
         the given criteria random nodes are picked.
 
@@ -200,11 +205,14 @@ def pick_nodes(count,
         @param support_ipv6_only: all nodes picked must be IPv6-only
         @type support_ipv6_only: boolean
 
+        @param active_only: pick only from nodes which are active
+        @type active_only: boolean
+
         @return: a list of nodes matching the given criteria
         @rtype: list of strings
     '''
     random.seed(time.time())
-    nodes = get_ring_nodes()
+    nodes = get_ring_nodes(active_only=active_only)
     nbc = get_nodes_by_country()
     cbn = get_countries_by_node()
     nbn = get_nodes_by_network()

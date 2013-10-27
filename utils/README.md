@@ -50,7 +50,7 @@ The quiet version (`-q`):
     % ./ring-ping.py -q ring.nlnog.net
     196 nodes ok (69.41ms avg), 9 nodes failed to ping, 2 nodes failed to connect.
 
-Information about the nodes failing to ping can be printed using the `-e` flag. In this example we pick some nodes with known problems using the `-n` flag:
+Information about the nodes failing to ping can be printed using the `-e` flag. In this example we pick some nodes with known problems at the moment of running this demo using the `-n` flag:
 
     % ./ring-ping.py -e -c 4 -n occaid01,xlshosting01,infomaniak01,bluezonejordan01 8.8.8.8
     ring-ping v0.1 written by Teun Vink <teun@teun.tv>

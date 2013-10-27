@@ -17,6 +17,9 @@ except ImportError:
 # number of nodes in the ring
 print "unique nodes: %d" % len(ring.get_ring_nodes())
 
+# number of active nodes in the ring
+print "active nodes: %d" % len(ring.get_ring_nodes(active_only=True))
+
 # number of unique networks in the ring
 print "unique networks: %d" % len(ring.get_ring_networks())
 
