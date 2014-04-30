@@ -114,7 +114,7 @@ def get_ring_nodes(country=None, active_only=False):
         return _countries[country.upper()].keys()
 
     try:
-        req = urllib2.Request("%snodes%s" % (RING_API, "/country/%s" % country.upper() if country != None else ''))
+        req = urllib2.Request("%snodes%s%s" % (RING_API, "/active" if active_only else "", "/country/%s" % country.upper() if country != None else ''))
         opener = urllib2.build_opener()
         f = opener.open(req)
         result = simplejson.load(f)
